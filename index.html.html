@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Check-In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2d3748;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 24px;
+        }
+
+        .mode-selection {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .mode-btn {
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .mode-btn:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .mode-btn h3 {
+            font-size: 18px;
+            margin-bottom: 4px;
+            color: #2d3748;
+        }
+
+        .mode-btn p {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .chat-container {
+            display: none;
+        }
+
+        .chat-container.active {
+            display: block;
+        }
+
+        .messages {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f7fafc;
+            border-radius: 12px;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.claude {
+            text-align: left;
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.claude .message-bubble {
+            background: #667eea;
+            color: white;
+        }
+
+        .message.user .message-bubble {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-area input, .input-area textarea {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+        }
+
+        .input-area input:focus, .input-area textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            background: #667eea;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .option-btn {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .option-btn:hover {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+
+        .option-btn.selected {
+            border-color: #667eea;
+            background: #eef2ff;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .tag-search {
+            margin: 12px 0;
+        }
+
+        .tag-search input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .tag-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+
+        .tag-chip {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 4px;
+            background: #eef2ff;
+            border: 1px solid #667eea;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-chip:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .tag-chip.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .datetime-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        .severity-slider {
+            width: 100%;
+            margin: 16px 0;
+        }
+
+        .severity-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        .download-area {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin: 8px;
+        }
+
+        .summary-box {
+            background: #f7fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+
+        .summary-box h4 {
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+
+        .summary-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .summary-box li {
+            padding: 4px 0;
+            color: #4a5568;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="passwordScreen" class="container" style="display: block;">
+        <div class="header">
+            <h1>🔒 Health Check-In</h1>
+            <p>Enter password to continue</p>
+        </div>
+        <div class="content" style="padding: 40px; text-align: center;">
+            <input type="password" id="passwordInput" placeholder="Enter password" style="width: 100%; max-width: 300px; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; margin-bottom: 16px;">
+            <br>
+            <button class="btn" onclick="checkPassword()">Unlock</button>
+            <p id="passwordError" style="color: #e53e3e; margin-top: 12px; display: none;">Incorrect password</p>
+        </div>
+    </div>
+
+    <div id="mainApp" class="container" style="display: none;">
+        <div class="header">
+            <h1>Health Check-In</h1>
+            <p id="lastCheckIn">Ready when you are</p>
+        </div>
+        
+        <div class="content">
+            <div id="modeSelection" class="mode-selection">
+                <button class="mode-btn" onclick="startCheckIn('quick')">
+                    <h3>⚡ Quick Check</h3>
+                    <p>~2 min • Basic mood, energy, major symptoms only</p>
+                </button>
+                
+                <button class="mode-btn" onclick="startCheckIn('standard')">
+                    <h3>💬 Standard Check</h3>
+                    <p>~5 min • Conversational, pattern recognition, moderate probing</p>
+                </button>
+                
+                <button class="mode-btn" onclick="startCheckIn('detailed')">
+                    <h3>🔍 Detailed Check</h3>
+                    <p>~10 min • Deep dive, reviews what you might be missing</p>
+                </button>
+            </div>
+
+            <div id="chatContainer" class="chat-container">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                
+                <div id="messages" class="messages"></div>
+                
+                <div id="inputArea" class="input-area">
+                    <textarea id="userInput" rows="1" placeholder="Type your response..."></textarea>
+                    <button class="btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <div id="downloadArea" class="download-area" style="display: none;">
+                <h3>Check-in Complete ✓</h3>
+                <div id="summary" class="summary-box"></div>
+                <button class="btn download-btn" onclick="downloadCSVs()">Download CSV Files</button>
+                <button class="btn download-btn" onclick="resetCheckIn()" style="background: #718096;">New Check-In</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Password protection
+        const PASSWORD_HASH = '72eaa33d'; // Hash for your password
+        
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(16);
+        }
+        
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const hashed = simpleHash(input);
+            
+            if (hashed === PASSWORD_HASH) {
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                localStorage.setItem('healthCheckinAuth', 'true');
+                init();
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+        
+        // Allow Enter key on password
+        document.addEventListener('DOMContentLoaded', function() {
+            const pwInput = document.getElementById('passwordInput');
+            if (pwInput) {
+                pwInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        checkPassword();
+                    }
+                });
+            }
+            
+            // Check if already authenticated
+            if (localStorage.getItem('healthCheckinAuth') === 'true') {
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+            }
+        });
+        
+
+        // Data structures
+        let checkInData = {
+            mode: null,
+            startTime: null,
+            symptoms: [],
+            moods: [],
+            energy: null,
+            conversationState: 'init',
+            currentQuestion: null,
+            tempData: {},
+            progress: 0
+        };
+
+        const symptomCategories = {
+            "Mental Health": ["Anxiety", "Brain fog", "Crying", "Difficulty Concentrating", "Poor appetite", "Stomach tightness", "Unfocused vision", "Chest tightness", "Irritability", "Leg bouncing", "Numbness", "Restless", "Rubbing/picking fingers", "Tremor/trembling", "Agoraphobia", "Binge eating", "Biting skin off lips", "Can't remember dreams", "Depression", "Difficulty falling asleep", "Difficulty With memory", "Dizziness", "Fainting", "Fearfulness", "Fidgeting", "Headache", "Muscle stiffness", "Nail biting", "Nightmares", "Panic attack", "Paranoia", "Shortness of breath"],
+            "cPTSD": ["Difficulty waking", "Crying", "Heart Palpitations", "Nerve tingling", "Stomach tightness", "Unfocused vision", "Chest tightness", "Leg bouncing", "Numbness", "Rubbing/picking fingers", "Tremor/trembling", "Dissociation", "Easily Startled", "Emotional flashback", "Fawning", "Freeze response", "Hypervigilance", "Insomnia", "Nightmares"],
+            "Physical/Chronic": ["Flank Pain", "Nerve tingling", "Muscle soreness", "Orthostatic Hypotension", "Raynauds's Syndrome", "Jaw Pop/Click", "Muscle Twitches", "Itching Skin – Genitals"],
+            "GI/Digestive": ["Stomach pain", "Stomach tightness", "Diarrhea", "Constipation", "Bloating", "Flatulence/Farting", "Nausea", "Acid reflux"]
+        };
+
+        const moodTags = [
+            "Affectionate", "Agitated", "Amused", "Angry", "Annoyed", "Anxious", "Awed", "Bitter", "Bored", "Brave",
+            "Burned Out", "Calm", "Confident", "Confused", "Curious", "Depressed", "Dissociative", "Edgy", "Embarrassed",
+            "Emotional", "Empty", "Energetic", "Enthusiastic", "Excited", "Exhausted", "Fearful", "Frustrated", "Fulfilled",
+            "Grateful", "Grief", "Guilty", "Happy", "Heartbroken", "Hesitant", "Hopeless", "In Love", "Incapable",
+            "Indifferent", "Inspired", "Irritable", "Lonely", "Longing", "Loved", "Lucky", "Mood Swings", "Nervous",
+            "Nostalgic", "Numb", "Obsessive Thoughts", "Optimistic", "Overwhelmed", "Passionate", "Playful", "PMS",
+            "Productive", "Proud", "Regret", "Relaxed", "Relieved", "Reluctant", "Resentful", "Resistant", "Restless",
+            "Sad", "Satisfied", "Self Critical", "Sensitive", "Shut Down", "Skeptical", "Sociable", "Stressed", "Stuck",
+            "Suspicious", "Tired", "Trapped", "Uneasy", "Unfocused", "Vindictive", "Withdrawn", "Worried"
+        ];
+
+        const symptomTags = {
+            trigger: ["Trigger: Abandonment", "Trigger: Hormonal", "Trigger: Medical", "Trigger: Rejection", "Trigger: Relationship", "Trigger: Unknown", "Trigger: Waiting", "Trigger: Work"],
+            state: ["State: Activation", "State: Baseline", "State: Dissociating", "State: Flare", "State: Post-episode"],
+            context: ["Context: Ketamine day", "Context: Low food", "Context: Missed meds", "Context: Night", "Context: Pre-period", "Context: Slept badly"],
+            response: ["Response: Distraction", "Response: Isolated", "Response: Medication", "Response: Reached out", "Response: Rode it out"]
+        };
+
+        // Browser storage functions
+        function saveToStorage() {
+            const history = JSON.parse(localStorage.getItem('checkInHistory') || '[]');
+            history.unshift({
+                timestamp: new Date().toISOString(),
+                mode: checkInData.mode,
+                symptomCount: checkInData.symptoms.length,
+                moodRating: checkInData.moods[0]?.rating,
+                energyRating: checkInData.energy?.rating
+            });
+            localStorage.setItem('checkInHistory', JSON.stringify(history.slice(0, 5)));
+            localStorage.setItem('lastCheckIn', new Date().toISOString());
+            
+            // Update symptom frequency
+            const freqData = JSON.parse(localStorage.getItem('symptomFrequency') || '{}');
+            checkInData.symptoms.forEach(s => {
+                freqData[s.name] = (freqData[s.name] || 0) + 1;
+            });
+            localStorage.setItem('symptomFrequency', JSON.stringify(freqData));
+        }
+
+        function getLastCheckIn() {
+            const last = localStorage.getItem('lastCheckIn');
+            if (!last) return null;
+            
+            const lastDate = new Date(last);
+            const now = new Date();
+            const hoursDiff = Math.floor((now - lastDate) / (1000 * 60 * 60));
+            
+            if (hoursDiff < 1) return "Less than an hour ago";
+            if (hoursDiff === 1) return "1 hour ago";
+            if (hoursDiff < 24) return `${hoursDiff} hours ago`;
+            const daysDiff = Math.floor(hoursDiff / 24);
+            if (daysDiff === 1) return "1 day ago";
+            return `${daysDiff} days ago`;
+        }
+
+        function getCommonSymptoms() {
+            const freqData = JSON.parse(localStorage.getItem('symptomFrequency') || '{}');
+            return Object.entries(freqData)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([name]) => name);
+        }
+
+        function getRecentPatterns() {
+            const history = JSON.parse(localStorage.getItem('checkInHistory') || '[]');
+            if (history.length < 2) return null;
+            
+            const recent = history[0];
+            const patterns = {
+                highAnxiety: recent.symptomCount > 3,
+                lowMood: recent.moodRating && recent.moodRating <= 2,
+                lowEnergy: recent.energyRating && recent.energyRating <= 2
+            };
+            
+            return patterns;
+        }
+
+        // Initialize
+        function init() {
+            const lastCheckIn = getLastCheckIn();
+            if (lastCheckIn) {
+                document.getElementById('lastCheckIn').textContent = `Last check-in: ${lastCheckIn}`;
+            }
+        }
+
+        // Conversation flow
+        let conversationFlow = [];
+        let currentStepIndex = 0;
+
+        function startCheckIn(mode) {
+            checkInData.mode = mode;
+            checkInData.startTime = new Date();
+            
+            document.getElementById('modeSelection').style.display = 'none';
+            document.getElementById('chatContainer').classList.add('active');
+            
+            initializeConversation(mode);
+        }
+
+        function initializeConversation(mode) {
+            const lastCheckIn = getLastCheckIn();
+            let greeting = lastCheckIn 
+                ? `Hey, it's been ${lastCheckIn.toLowerCase()} since your last check-in. How are you doing right now?`
+                : `Hey Arielle. How are you doing right now?`;
+            
+            if (mode === 'quick') {
+                greeting += " (Quick version - just the basics)";
+            } else if (mode === 'detailed') {
+                greeting += " (We'll take our time and dig into everything)";
+            }
+            
+            addMessage('claude', greeting);
+            checkInData.conversationState = 'freeform_opening';
+        }
+
+        function addMessage(sender, text, options = null) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            
+            if (options) {
+                const optionsGrid = document.createElement('div');
+                optionsGrid.className = 'options-grid';
+                
+                options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = opt.label;
+                    btn.onclick = () => handleOptionClick(opt.value);
+                    optionsGrid.appendChild(btn);
+                });
+                
+                messageDiv.appendChild(optionsGrid);
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            addMessage('user', text);
+            input.value = '';
+            
+            processUserResponse(text);
+        }
+
+        function processUserResponse(text) {
+            const state = checkInData.conversationState;
+            
+            if (state === 'freeform_opening') {
+                parseOpeningResponse(text);
+            } else if (state === 'confirming_symptoms') {
+                handleSymptomConfirmation(text);
+            } else if (state === 'severity_rating') {
+                handleSeverityRating(text);
+            } else if (state === 'time_confirmation') {
+                handleTimeConfirmation(text);
+            } else if (state === 'tag_selection') {
+                handleTagSelection(text);
+            } else if (state === 'mood_rating') {
+                handleMoodRating(text);
+            } else if (state === 'energy_rating') {
+                handleEnergyRating(text);
+            } else if (state === 'probing_missing') {
+                handleMissingSymptoms(text);
+            }
+            
+            updateProgress();
+        }
+
+        function parseOpeningResponse(text) {
+            const lower = text.toLowerCase();
+            checkInData.tempData.rawResponse = text;
+            
+            // Parse for symptoms, mood indicators, events
+            const detectedSymptoms = [];
+            const detectedMoodWords = [];
+            const detectedEvents = [];
+            
+            // Check for common symptom mentions
+            if (lower.includes('anxious') || lower.includes('anxiety')) {
+                detectedSymptoms.push('Anxiety');
+                detectedMoodWords.push('Anxious');
+            }
+            if (lower.includes('stomach')) {
+                if (lower.includes('tight') || lower.includes('knot')) {
+                    detectedSymptoms.push('Stomach tightness');
+                } else if (lower.includes('hurt') || lower.includes('pain')) {
+                    detectedSymptoms.push('Stomach pain');
+                }
+            }
+            if (lower.includes('tired') || lower.includes('exhausted')) {
+                detectedMoodWords.push('Exhausted');
+                checkInData.tempData.lowEnergy = true;
+            }
+            if (lower.includes('cry') || lower.includes('crying')) {
+                detectedSymptoms.push('Crying');
+                detectedMoodWords.push('Sad');
+            }
+            if (lower.includes('can\'t focus') || lower.includes('concentration')) {
+                detectedSymptoms.push('Difficulty Concentrating');
+            }
+            
+            // Check for relationship mentions
+            if (lower.includes('garrett') || lower.includes('boyfriend') || lower.includes('relationship')) {
+                detectedEvents.push('relationship_stress');
+                // Suggest common Garrett-related symptoms
+                addMessage('claude', 'I hear you mentioning the relationship situation. That\'s been tough on you lately.');
+            }
+            
+            checkInData.tempData.detectedSymptoms = detectedSymptoms;
+            checkInData.tempData.detectedMoods = detectedMoodWords;
+            
+            if (detectedSymptoms.length > 0) {
+                const symptomList = detectedSymptoms.join(', ');
+                addMessage('claude', `I'm picking up on: ${symptomList}. Let me get some details on each of these.`);
+                checkInData.conversationState = 'confirming_symptoms';
+                checkInData.tempData.currentSymptomIndex = 0;
+                askAboutSymptom(detectedSymptoms[0]);
+            } else if (lower.includes('fine') || lower.includes('ok') || lower.includes('okay')) {
+                // Short answer - probe deeper
+                addMessage('claude', 'You sound kind of flat there. Energy feeling low? Anything on your mind?');
+                checkInData.conversationState = 'freeform_opening';
+            } else {
+                // No symptoms detected - move to mood
+                addMessage('claude', 'Got it. How would you rate your overall mood right now on a scale of 1-5? (1 = worst, 5 = best)');
+                checkInData.conversationState = 'mood_rating';
+            }
+        }
+
+        function askAboutSymptom(symptomName) {
+            checkInData.tempData.currentSymptom = symptomName;
+            
+            if (symptomName === 'Anxiety') {
+                addMessage('claude', 'For the anxiety - how intense is it right now? (1-10, where 10 is the worst)');
+                checkInData.conversationState = 'severity_rating';
+            } else if (symptomName === 'Crying') {
+                addMessage('claude', 'The crying - how intense was it? (1-10)');
+                checkInData.conversationState = 'severity_rating';
+            } else if (symptomName === 'Stomach tightness' || symptomName === 'Stomach pain') {
+                addMessage('claude', `For the ${symptomName.toLowerCase()} - rate the severity? (1-10)`);
+                checkInData.conversationState = 'severity_rating';
+            } else {
+                addMessage('claude', `Rate the ${symptomName.toLowerCase()}? (1-10)`);
+                checkInData.conversationState = 'severity_rating';
+            }
+        }
+
+        function handleSymptomConfirmation(text) {
+            // Move to next symptom or finish symptoms
+            const symptoms = checkInData.tempData.detectedSymptoms;
+            const index = checkInData.tempData.currentSymptomIndex;
+            
+            if (index < symptoms.length - 1) {
+                checkInData.tempData.currentSymptomIndex++;
+                askAboutSymptom(symptoms[index + 1]);
+            } else {
+                // Done with detected symptoms - ask about physical manifestations
+                askAboutPhysicalSymptoms();
+            }
+        }
+
+        function handleSeverityRating(text) {
+            const severity = parseInt(text);
+            
+            if (isNaN(severity) || severity < 1 || severity > 10) {
+                addMessage('claude', 'Please give me a number between 1 and 10.');
+                return;
+            }
+            
+            checkInData.tempData.currentSeverity = severity;
+            addMessage('claude', 'When did this start? (e.g., "2 hours ago", "this morning", or give me a specific time)');
+            checkInData.conversationState = 'time_confirmation';
+        }
+
+        function handleTimeConfirmation(text) {
+            const parsedTime = parseTimeReference(text);
+            
+            addMessage('claude', `So this started around ${parsedTime.display} - does that sound right? (yes/no)`);
+            
+            checkInData.tempData.parsedTime = parsedTime.iso;
+            checkInData.tempData.timeDisplay = parsedTime.display;
+            checkInData.conversationState = 'time_verify';
+        }
+
+        function parseTimeReference(text) {
+            const now = new Date();
+            const lower = text.toLowerCase();
+            
+            // Try to parse relative times
+            if (lower.includes('hour')) {
+                const hours = parseInt(text) || 1;
+                const time = new Date(now - hours * 60 * 60 * 1000);
+                return {
+                    iso: time.toISOString(),
+                    display: time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                };
+            }
+            
+            if (lower.includes('this morning')) {
+                const morning = new Date(now);
+                morning.setHours(8, 0, 0);
+                return {
+                    iso: morning.toISOString(),
+                    display: '8:00 AM'
+                };
+            }
+            
+            // Default to "just now"
+            return {
+                iso: now.toISOString(),
+                display: 'just now'
+            };
+        }
+
+        function askAboutPhysicalSymptoms() {
+            const symptomName = checkInData.tempData.currentSymptom;
+            
+            if (symptomName === 'Anxiety') {
+                addMessage('claude', 'Are you noticing any of these physical signs right now?', [
+                    { label: 'Stomach tightness', value: 'Stomach tightness' },
+                    { label: 'Chest tightness', value: 'Chest tightness' },
+                    { label: 'Leg bouncing', value: 'Leg bouncing' },
+                    { label: 'Heart palpitations', value: 'Heart Palpitations' },
+                    { label: 'None of these', value: 'none' }
+                ]);
+                checkInData.conversationState = 'physical_symptoms';
+            } else {
+                moveToMoodRating();
+            }
+        }
+
+        function handleOptionClick(value) {
+            if (value === 'none') {
+                addMessage('user', 'None of these');
+                moveToMoodRating();
+            } else {
+                addMessage('user', value);
+                // Add this as an additional symptom
+                checkInData.symptoms.push({
+                    name: value,
+                    severity: 5, // Default for quick-add
+                    datetime: new Date().toISOString(),
+                    notes: 'Physical manifestation of anxiety'
+                });
+                addMessage('claude', `Got it. Anything else physical you're noticing?`, [
+                    { label: 'Unfocused vision', value: 'Unfocused vision' },
+                    { label: 'Tremor/trembling', value: 'Tremor/trembling' },
+                    { label: 'Rubbing/picking fingers', value: 'Rubbing/picking fingers' },
+                    { label: 'No, that\'s it', value: 'done' }
+                ]);
+            }
+        }
+
+        function moveToMoodRating() {
+            addMessage('claude', 'How would you rate your overall mood right now? (1-5, where 1 = worst, 5 = best)');
+            checkInData.conversationState = 'mood_rating';
+        }
+
+        function handleMoodRating(text) {
+            const rating = parseInt(text);
+            
+            if (isNaN(rating) || rating < 1 || rating > 5) {
+                addMessage('claude', 'Please give me a number between 1 and 5.');
+                return;
+            }
+            
+            checkInData.tempData.moodRating = rating;
+            
+            if (rating <= 2) {
+                addMessage('claude', 'That\'s rough. What mood tags fit right now? Type them or tell me what you\'re feeling.');
+                showMoodTagSearch();
+            } else {
+                addMessage('claude', 'What mood tags fit? Type them or tell me what you\'re feeling.');
+                showMoodTagSearch();
+            }
+            
+            checkInData.conversationState = 'mood_tags';
+        }
+
+        function showMoodTagSearch() {
+            const messagesDiv = document.getElementById('messages');
+            const searchDiv = document.createElement('div');
+            searchDiv.className = 'tag-search';
+            searchDiv.innerHTML = `
+                <input type="text" id="moodTagSearch" placeholder="Search mood tags..." oninput="filterMoodTags(this.value)">
+                <div id="moodTagList" class="tag-list"></div>
+            `;
+            messagesDiv.appendChild(searchDiv);
+            renderMoodTags();
+        }
+
+        function filterMoodTags(query) {
+            renderMoodTags(query.toLowerCase());
+        }
+
+        function renderMoodTags(filter = '') {
+            const listDiv = document.getElementById('moodTagList');
+            if (!listDiv) return;
+            
+            listDiv.innerHTML = '';
+            const filtered = moodTags.filter(tag => 
+                tag.toLowerCase().includes(filter)
+            );
+            
+            filtered.slice(0, 20).forEach(tag => {
+                const chip = document.createElement('span');
+                chip.className = 'tag-chip';
+                chip.textContent = tag;
+                chip.onclick = () => toggleMoodTag(tag, chip);
+                listDiv.appendChild(chip);
+            });
+        }
+
+        let selectedMoodTags = [];
+
+        function toggleMoodTag(tag, element) {
+            const index = selectedMoodTags.indexOf(tag);
+            if (index > -1) {
+                selectedMoodTags.splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                selectedMoodTags.push(tag);
+                element.classList.add('selected');
+            }
+        }
+
+        function handleMoodTags(text) {
+            if (text.toLowerCase() === 'done' || selectedMoodTags.length > 0) {
+                checkInData.moods.push({
+                    rating: checkInData.tempData.moodRating,
+                    datetime: new Date().toISOString(),
+                    tags: selectedMoodTags.join(', '),
+                    notes: ''
+                });
+                
+                addMessage('user', selectedMoodTags.join(', ') || 'Done');
+                moveToEnergyRating();
+            }
+        }
+
+        function moveToEnergyRating() {
+            addMessage('claude', 'Last one - what\'s your energy level right now? (1-5, where 1 = completely drained, 5 = fully energized)');
+            checkInData.conversationState = 'energy_rating';
+        }
+
+        function handleEnergyRating(text) {
+            const rating = parseInt(text);
+            
+            if (isNaN(rating) || rating < 1 || rating > 5) {
+                addMessage('claude', 'Please give me a number between 1 and 5.');
+                return;
+            }
+            
+            checkInData.energy = {
+                rating: rating,
+                datetime: new Date().toISOString()
+            };
+            
+            if (checkInData.mode === 'detailed') {
+                probeForMissingSymptoms();
+            } else {
+                finishCheckIn();
+            }
+        }
+
+        function probeForMissingSymptoms() {
+            const common = getCommonSymptoms();
+            const reported = checkInData.symptoms.map(s => s.name);
+            const missing = common.filter(s => !reported.includes(s));
+            
+            if (missing.length > 0) {
+                addMessage('claude', `Quick check - any of these happening that you haven't mentioned? ${missing.slice(0, 5).join(', ')}? (yes/no or list any)`);
+                checkInData.conversationState = 'probing_missing';
+                checkInData.tempData.missingSymptoms = missing;
+            } else {
+                finishCheckIn();
+            }
+        }
+
+        function handleMissingSymptoms(text) {
+            const lower = text.toLowerCase();
+            if (lower === 'no' || lower === 'nope' || lower === 'none') {
+                finishCheckIn();
+            } else {
+                // Quick add mentioned symptoms
+                addMessage('claude', 'Got it, adding those.');
+                finishCheckIn();
+            }
+        }
+
+        function finishCheckIn() {
+            saveToStorage();
+            
+            document.getElementById('chatContainer').classList.remove('active');
+            document.getElementById('downloadArea').style.display = 'block';
+            
+            showSummary();
+        }
+
+        function showSummary() {
+            const summaryDiv = document.getElementById('summary');
+            let html = '<h4>Check-In Summary</h4><ul>';
+            
+            html += `<li><strong>Symptoms:</strong> ${checkInData.symptoms.length} logged</li>`;
+            html += `<li><strong>Mood:</strong> ${checkInData.moods[0]?.rating}/5</li>`;
+            html += `<li><strong>Energy:</strong> ${checkInData.energy?.rating}/5</li>`;
+            
+            html += '</ul>';
+            summaryDiv.innerHTML = html;
+        }
+
+        function updateProgress() {
+            // Simple progress based on conversation state
+            let progress = 0;
+            const state = checkInData.conversationState;
+            
+            if (state === 'freeform_opening') progress = 10;
+            else if (state.includes('symptom')) progress = 40;
+            else if (state === 'mood_rating' || state === 'mood_tags') progress = 70;
+            else if (state === 'energy_rating') progress = 90;
+            
+            document.getElementById('progressFill').style.width = progress + '%';
+            checkInData.progress = progress;
+        }
+
+        function downloadCSVs() {
+            downloadSymptomsCSV();
+            downloadMoodCSV();
+            downloadEnergyCSV();
+        }
+
+        function downloadSymptomsCSV() {
+            if (checkInData.symptoms.length === 0) return;
+            
+            let csv = 'datetime,datetime_end,name,severity,tags,notes\n';
+            checkInData.symptoms.forEach(s => {
+                const row = [
+                    s.datetime,
+                    s.datetime_end || '',
+                    s.name,
+                    s.severity || '',
+                    s.tags || '',
+                    `"${s.notes || ''}"`
+                ];
+                csv += row.join(',') + '\n';
+            });
+            
+            downloadFile('symptoms_' + getTimestamp() + '.csv', csv);
+        }
+
+        function downloadMoodCSV() {
+            if (checkInData.moods.length === 0) return;
+            
+            let csv = 'datetime,rating,tags,notes\n';
+            checkInData.moods.forEach(m => {
+                const row = [
+                    m.datetime,
+                    m.rating,
+                    `"${m.tags}"`,
+                    `"${m.notes || ''}"`
+                ];
+                csv += row.join(',') + '\n';
+            });
+            
+            downloadFile('mood_' + getTimestamp() + '.csv', csv);
+        }
+
+        function downloadEnergyCSV() {
+            if (!checkInData.energy) return;
+            
+            let csv = 'datetime,rating\n';
+            csv += `${checkInData.energy.datetime},${checkInData.energy.rating}\n`;
+            
+            downloadFile('energy_' + getTimestamp() + '.csv', csv);
+        }
+
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function getTimestamp() {
+            return new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        }
+
+        function resetCheckIn() {
+            checkInData = {
+                mode: null,
+                startTime: null,
+                symptoms: [],
+                moods: [],
+                energy: null,
+                conversationState: 'init',
+                currentQuestion: null,
+                tempData: {},
+                progress: 0
+            };
+            
+            selectedMoodTags = [];
+            currentStepIndex = 0;
+            
+            document.getElementById('downloadArea').style.display = 'none';
+            document.getElementById('modeSelection').style.display = 'grid';
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        // Allow Enter key to send
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initialize on load
+        window.onload = init;
+    </script>
+</body>
+</html>
